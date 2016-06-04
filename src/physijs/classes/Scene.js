@@ -1,3 +1,4 @@
+import THREE from 'three';
 import MESSAGE_TYPES from '../../MESSAGE_TYPES';
 import BODY_TYPES from '../../BODY_TYPES';
 import PhysicsObject, {_PhysicsObject} from './PhysicsObject';

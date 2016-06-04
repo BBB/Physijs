@@ -1,3 +1,4 @@
+import THREE from 'three';
 import {getUniqueId} from './util/UniqueId';
 
 /*

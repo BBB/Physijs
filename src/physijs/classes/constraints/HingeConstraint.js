@@ -1,3 +1,4 @@
+import THREE from 'three';
 import CONSTRAINT_TYPES from '../../../CONSTRAINT_TYPES';
 import Constraint from './Constraint';
 

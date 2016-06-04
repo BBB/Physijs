@@ -1,3 +1,4 @@
+import THREE from 'three';
 import BODY_TYPES from '../../BODY_TYPES';
 import PhysicsObject, {_PhysicsObject, clone} from './PhysicsObject';
 

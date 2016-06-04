@@ -1,214 +1,10 @@
 (function (global, factory) {
-    typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
-    typeof define === 'function' && define.amd ? define(factory) :
-    global.physijs = factory();
-}(this, function () { 'use strict';
+    typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('three')) :
+    typeof define === 'function' && define.amd ? define(['three'], factory) :
+    (global.physijs = factory(global.THREE));
+}(this, function (THREE) { 'use strict';
 
-    var MESSAGE_TYPES = {
-    	REPORTS: {
-    		/**
-    		 * world report containing matrix data for rigid bodies
-    		 * element [1] is how many simulation ticks have been processed (world.ticks)
-    		 * element [2] is number of rigid bodies in the array
-    		 * 2...n elements are the bodies' matrix data
-    		 */
-    		WORLD: 0,
-
-    		/**
-    		 * contains details for new contacts
-    		 * element [1] is the number of collisions, each collision is represented by:
-    		 * [object_a_id, object_b_id, world_contact_point{xyz}, contact_normal{xyz}, linear_velocity_delta{xyz}, angular_velocity_delta{xyz}, penetration_depth]
-    		 */
-    		COLLISIONS: 1
-    	},
-
-    	/**
-    	 * initializes the physics world
-    	 * [broadphase] String either 'sap' or 'naive' [default 'sap']
-    	 * [gravity] Object with float properties `x`, `y`, `z` [default {x:0, y:-9.8, z:0} ]
-    	 */
-    	INITIALIZE: 'INITIALIZE',
-
-    	/**
-    	 * adds a rigid body to the world
-    	 * body_id Integer unique id for the body
-    	 * shape_description Object definition corresponding to the type of rigid body (see BODY_TYPES)
-    	 * mass Float amount of mass the body has, 0 or Infinity creates a static object
-    	 * restitution Float body's restitution
-    	 * friction Float body's friction
-    	 * linear_damping Float body's linear damping
-    	 * angular_damping Float body's angular damping
-    	 * collision_groups Integer body's collision groups
-    	 * collision_mask Integer body's collision mask
-    	 */
-    	ADD_RIGIDBODY: 'ADD_RIGIDBODY',
-
-    	/**
-    	 * removes a rigid body from the world
-    	 * body_id Integer unique id of the body
-    	 */
-    	REMOVE_RIGIDBODY: 'REMOVE_RIGIDBODY',
-
-    	/**
-    	 * sets the specified rigid body's mass
-    	 * body_id Integer unique integer id for the body
-    	 * mass Float new mass value
-    	 */
-    	SET_RIGIDBODY_MASS: 'SET_RIGIDBODY_MASS',
-
-    	/**
-    	 * sets the specified rigid body's restitution
-    	 * body_id Integer unique integer id for the body
-    	 * mass Float new restitution value
-    	 */
-    	SET_RIGIDBODY_RESTITUTION: 'SET_RIGIDBODY_RESTITUTION',
-
-    	/**
-    	 * sets the specified rigid body's friction
-    	 * body_id Integer unique integer id for the body
-    	 * mass Float new friction value
-    	 */
-    	SET_RIGIDBODY_FRICTION: 'SET_RIGIDBODY_FRICTION',
-
-    	/**
-    	 * sets the specified rigid body's linear damping
-    	 * body_id Integer unique integer id for the body
-    	 * damping Float new linear damping value
-    	 */
-    	SET_RIGIDBODY_LINEAR_DAMPING: 'SET_RIGIDBODY_LINEAR_DAMPING',
-
-    	/**
-    	 * sets the specified rigid body's angular damping
-    	 * body_id Integer unique integer id for the body
-    	 * damping Float new angular damping value
-    	 */
-    	SET_RIGIDBODY_ANGULAR_DAMPING: 'SET_RIGIDBODY_ANGULAR_DAMPING',
-
-    	/**
-    	 * sets the specified rigid body's collision groups
-    	 * body_id Integer unique integer id for the body
-    	 * groups Integer new collision group value
-    	 */
-    	SET_RIGIDBODY_COLLISION_GROUPS: 'SET_RIGIDBODY_COLLISION_GROUPS',
-
-    	/**
-    	 * sets the specified rigid body's collision mask
-    	 * body_id Integer unique integer id for the body
-    	 * mask Integer new collision mask value
-    	 */
-    	SET_RIGIDBODY_COLLISION_MASK: 'SET_RIGIDBODY_COLLISION_MASK',
-
-    	/**
-    	 * sets the specified rigid body's position & rotation
-    	 * body_id Integer unique integer id for the body
-    	 * position Object new coordinates for the body's position, {x:x, y:y, z:z}
-    	 * rotation Object new quaternion values {x:x, y:y, z:z, w:w}
-    	 */
-    	SET_RIGIDBODY_TRANSFORM: 'SET_RIGIDBODY_TRANSFORM',
-
-    	/**
-    	 * sets the specified rigid body's linear velocity
-    	 * body_id Integer unique integer id for the body
-    	 * velocity Object new values for the body's linear velocity, {x:x, y:y, z:z}
-    	 */
-    	SET_RIGIDBODY_LINEAR_VELOCITY: 'SET_RIGIDBODY_LINEAR_VELOCITY',
-
-    	/**
-    	 * sets the specified rigid body's angular velocity
-    	 * body_id Integer unique integer id for the body
-    	 * velocity Object new values for the body's angular velocity, {x:x, y:y, z:z}
-    	 */
-    	SET_RIGIDBODY_ANGULAR_VELOCITY: 'SET_RIGIDBODY_ANGULAR_VELOCITY',
-
-    	/**
-    	 * sets the specified rigid body's linear factor
-    	 * body_id Integer unique integer id for the body
-    	 * factor Object new values for the body's linear factor, {x:x, y:y, z:z}
-    	 */
-    	SET_RIGIDBODY_LINEAR_FACTOR: 'SET_RIGIDBODY_LINEAR_FACTOR',
-
-    	/**
-    	 * sets the specified rigid body's angular factor
-    	 * body_id Integer unique integer id for the body
-    	 * factor Object new values for the body's angular factor, {x:x, y:y, z:z}
-    	 */
-    	SET_RIGIDBODY_ANGULAR_FACTOR: 'SET_RIGIDBODY_ANGULAR_FACTOR',
-
-    	/**
-    	 * steps the physics simulation
-    	 * time_delta Float total amount of time, in seconds, to step the simulation by
-    	 * [max_step] Float maximum step of size, in seconds [default is value of `time_delta`]
-    	 */
-    	STEP_SIMULATION: 'STEP_SIMULATION',
-
-    	/**
-    	 * performs ray traces
-    	 * raytrace_id unique identifier for this request
-    	 * rays Array[ { start: { x:x, y:y, z:z }, end: { x:x, y:y, z:z } } ]
-    	 */
-    	RAYTRACE: 'RAYTRACE',
-
-    	/**
-    	 * results of a raytrace request
-    	 * raytrace_id unique identifier of the request
-    	 * results Array[ Array[ { body_id:body_id, point: { x:x, y:y, z:z }, normal: { x:x, y:y, z:z } } ] ]
-    	 */
-    	RAYTRACE_RESULTS: 'RAYTRACE_RESULTS',
-
-    	/**
-    	 * adds a constraint on one or two bodies to the world
-    	 * entirety of the message body corresponds to the type of constraint (see CONSTRAINT_TYPES)
-    	 */
-    	ADD_CONSTRAINT: 'ADD_CONSTRAINT'
-    };
-
-    var BODY_TYPES = {
-    	/**
-    	 * width Float box extent on x axis
-    	 * height Float box extent on y axis
-    	 * depth Float box extent on z axis
-    	 */
-    	BOX: 'BOX',
-
-    	/**
-    	 * shapes Array list of shape definitions composing the compound shape
-    	 */
-    	COMPOUND: 'COMPOUND',
-
-    	/**
-    	 * radius Float cylinder radius
-    	 * height Float cylinder extent on y axis
-    	 */
-    	CONE: 'CONE',
-
-    	/**
-    	 * vertices Array list of vertex components for all vertices, where list is [x1, y1, z1, x2, y2, z2 ... xN, yN, zN]
-    	 */
-    	CONVEX: 'CONVEX',
-
-    	/**
-    	 * radius Float cylinder radius
-    	 * height Float cylinder extent on y axis
-    	 */
-    	CYLINDER: 'CYLINDER',
-
-    	/**
-    	 * width Float plane extent on x axis
-    	 * height Float plane extent on y axis
-    	 */
-    	PLANE: 'PLANE',
-
-    	/**
-    	 * radius Float radius of the sphere
-    	 */
-    	SPHERE: 'SPHERE',
-
-    	/**
-    	 * vertices Array list of vertex components for all vertices, where list is [x1, y1, z1, x2, y2, z2 ... xN, yN, zN]
-    	 * faces Array list of vertex indexes composing the faces
-    	 */
-    	TRIANGLE: 'TRIANGLE'
-    }
+    THREE = 'default' in THREE ? THREE['default'] : THREE;
 
     var nextId = 0;
     function getUniqueId() {
@@ -429,6 +225,270 @@
     	return cloned;
     }
 
+    var BODY_TYPES = {
+    	/**
+    	 * width Float box extent on x axis
+    	 * height Float box extent on y axis
+    	 * depth Float box extent on z axis
+    	 */
+    	BOX: 'BOX',
+
+    	/**
+    	 * shapes Array list of shape definitions composing the compound shape
+    	 */
+    	COMPOUND: 'COMPOUND',
+
+    	/**
+    	 * radius Float cylinder radius
+    	 * height Float cylinder extent on y axis
+    	 */
+    	CONE: 'CONE',
+
+    	/**
+    	 * vertices Array list of vertex components for all vertices, where list is [x1, y1, z1, x2, y2, z2 ... xN, yN, zN]
+    	 */
+    	CONVEX: 'CONVEX',
+
+    	/**
+    	 * radius Float cylinder radius
+    	 * height Float cylinder extent on y axis
+    	 */
+    	CYLINDER: 'CYLINDER',
+
+    	/**
+    	 * width Float plane extent on x axis
+    	 * height Float plane extent on y axis
+    	 */
+    	PLANE: 'PLANE',
+
+    	/**
+    	 * radius Float radius of the sphere
+    	 */
+    	SPHERE: 'SPHERE',
+
+    	/**
+    	 * vertices Array list of vertex components for all vertices, where list is [x1, y1, z1, x2, y2, z2 ... xN, yN, zN]
+    	 * faces Array list of vertex indexes composing the faces
+    	 */
+    	TRIANGLE: 'TRIANGLE'
+    }
+
+    function Box( first, second, third ) {
+    	return PhysicsObject.call( this, first, second, third, getShapeDefinition );
+    }
+
+    function getShapeDefinition( geometry ) {
+    	geometry.computeBoundingBox(); // make sure bounding radius has been calculated
+
+    	return {
+    		body_type: BODY_TYPES.BOX,
+    		width: geometry.boundingBox.max.x,
+    		height: geometry.boundingBox.max.y,
+    		depth: geometry.boundingBox.max.z
+    	};
+    }
+
+    function Cone( first, second, third ) {
+    	return PhysicsObject.call( this, first, second, third, getShapeDefinition$1 );
+    }
+
+    function getShapeDefinition$1( geometry ) {
+    	geometry.computeBoundingBox(); // make sure bounding radius has been calculated
+
+    	return {
+    		body_type: BODY_TYPES.CONE,
+    		radius: geometry.boundingBox.max.x,
+    		height: geometry.boundingBox.max.y
+    	};
+    }
+
+    function Convex( first, second, third ) {
+    	return PhysicsObject.call( this, first, second, third, getShapeDefinition$2 );
+    }
+
+    function getShapeDefinition$2( geometry ) {
+    	var vertices = geometry.vertices.reduce(
+    		function( vertices, vertex ) {
+    			vertices.push( vertex.x, vertex.y, vertex.z );
+    			return vertices;
+    		},
+    		[]
+    	);
+
+    	return {
+    		body_type: BODY_TYPES.CONVEX,
+    		vertices: vertices
+    	};
+    }
+
+    function Cylinder( first, second, third ) {
+    	return PhysicsObject.call( this, first, second, third, getShapeDefinition$3 );
+    }
+
+    function getShapeDefinition$3( geometry ) {
+    	geometry.computeBoundingBox(); // make sure bounding radius has been calculated
+
+    	return {
+    		body_type: BODY_TYPES.CYLINDER,
+    		radius: geometry.boundingBox.max.x,
+    		height: geometry.boundingBox.max.y
+    	};
+    }
+
+    function Plane( first, second, third ) {
+    	return PhysicsObject.call( this, first, second, third, getShapeDefinition$4 );
+    }
+
+    function getShapeDefinition$4( geometry ) {
+    	geometry.computeBoundingBox(); // make sure bounding radius has been calculated
+
+    	return {
+    		body_type: BODY_TYPES.PLANE,
+    		width: geometry.boundingBox.max.x,
+    		height: geometry.boundingBox.max.y
+    	};
+    }
+
+    function Sphere( first, second, third ) {
+    	return PhysicsObject.call( this, first, second, third, getShapeDefinition$5 );
+    }
+
+    function getShapeDefinition$5( geometry ) {
+    	geometry.computeBoundingSphere(); // make sure bounding radius has been calculated
+
+    	return {
+    		body_type: BODY_TYPES.SPHERE,
+    		radius: geometry.boundingSphere.radius
+    	};
+    }
+
+    function TriangleMesh( first, second, third ) {
+    	return PhysicsObject.call( this, first, second, third, getShapeDefinition$6 );
+    }
+
+    function getShapeDefinition$6( geometry ) {
+    	var vertices = geometry.vertices.reduce(
+    		function( vertices, vertex ) {
+    			vertices.push( vertex.x, vertex.y, vertex.z );
+    			return vertices;
+    		},
+    		[]
+    	);
+
+    	var faces = geometry.faces.reduce(
+    		function( faces, face ) {
+    			faces.push( face.a, face.b, face.c );
+    			return faces;
+    		},
+    		[]
+    	);
+
+    	return {
+    		body_type: BODY_TYPES.TRIANGLE,
+    		vertices: vertices,
+    		faces: faces
+    	};
+    }
+
+    var CONSTRAINT_TYPES = {
+        /**
+         * constraint_type String type of constraint
+         * constraint_id Number id of the constraint
+         * body_a_id Number id of body_a
+         * hinge_axis Object axis in body_a the hinge revolves around {x:x, y:y, z:z}
+         * point_a Object point in body_a the hinge revolves around {x:x, y:y, z:z}
+         * body_b_id [optional] Number id of body_b
+         * point_b [optional] Object point in body_b the hinge revolves around {x:x, y:y, z:z}
+         * active Boolean whether or not the constraint is enabled
+         * factor: Number factor applied to constraint, 0-1
+         * breaking_threshold: Number amount of force which, if exceeded, de-activates the constraint
+         * limit.enabled Boolean whether or not the limits are set
+         * limit.lower Number lower bound of limit
+         * limit.upper Number upper bound of limit
+         * motor.enabled Boolean whether or not the motor is on
+         * motor.torque Number maximum torque the motor can apply
+         * motor.max_speed Number maximum speed the motor can reach under its own power
+         */
+        HINGE: 'HINGE'
+    }
+
+    function Constraint() {
+        this.constraint_id = getUniqueId();
+        this.scene = null;
+    };
+
+    function HingeConstraint( body_a, hinge_axis, point_a, body_b, point_b ) {
+        Constraint.call( this );
+
+        this.body_a = body_a;
+        this.hinge_axis = hinge_axis;
+        this.point_a = point_a;
+        this.body_b = body_b;
+        this.point_b = point_b;
+
+        this.physics = {
+            active: true,
+            factor: 1,
+            breaking_threshold: 0,
+            last_impulse: new THREE.Vector3(),
+            limit: {
+                enabled: false,
+                lower: null,
+                upper: null
+            },
+            motor: {
+                enabled: false,
+                torque: null,
+                max_speed: null
+            }
+        };
+    }
+
+    HingeConstraint.prototype = Object.create( Constraint.prototype );
+    HingeConstraint.prototype.constructor = HingeConstraint;
+
+    HingeConstraint.prototype.getConstraintDefinition = function() {
+        return {
+            constraint_type: CONSTRAINT_TYPES.HINGE,
+            constraint_id: this.constraint_id,
+            body_a_id: this.body_a.physics._.id,
+            hinge_axis: { x: this.hinge_axis.x, y: this.hinge_axis.y, z: this.hinge_axis.z },
+            point_a: { x: this.point_a.x, y: this.point_a.y, z: this.point_a.z },
+            body_b_id: this.body_b == null ? null : this.body_b.physics._.id,
+            point_b: this.body_b == null ? null : { x: this.point_b.x, y: this.point_b.y, z: this.point_b.z },
+
+            active: this.physics.active,
+            factor: this.physics.factor,
+            breaking_threshold: this.physics.breaking_threshold,
+            limit: {
+                enabled: this.physics.limit.enabled,
+                lower: this.physics.limit.lower,
+                upper: this.physics.limit.upper
+            },
+            motor: {
+                enabled: this.physics.motor.enabled,
+                torque: this.physics.motor.torque,
+                max_speed: this.physics.motor.max_speed
+            }
+        };
+    };
+
+    HingeConstraint.prototype.setActive = function( active ) {
+        this.physics.active = active;
+    };
+
+    HingeConstraint.prototype.setLimit = function( lower, upper ) {
+        this.physics.limit.enabled = lower != null || upper != null;
+        this.physics.limit.lower = lower;
+        this.physics.limit.upper = upper;
+    };
+
+    HingeConstraint.prototype.setMotor = function( torque, max_speed ) {
+        this.physics.motor.enabled = torque != null || max_speed != null;
+        this.physics.motor.torque = torque;
+        this.physics.motor.max_speed = max_speed;
+    };
+
     function CompoundObject( object, physics_descriptor ) {
     	if ( physics_descriptor == null ) {
     		throw new Error( 'Physijs: attempted to create rigid body without specifying physics details' );
@@ -496,9 +556,162 @@
     	};
     }
 
-    function Constraint() {
-        this.constraint_id = getUniqueId();
-        this.scene = null;
+    var MESSAGE_TYPES = {
+    	REPORTS: {
+    		/**
+    		 * world report containing matrix data for rigid bodies
+    		 * element [1] is how many simulation ticks have been processed (world.ticks)
+    		 * element [2] is number of rigid bodies in the array
+    		 * 2...n elements are the bodies' matrix data
+    		 */
+    		WORLD: 0,
+
+    		/**
+    		 * contains details for new contacts
+    		 * element [1] is the number of collisions, each collision is represented by:
+    		 * [object_a_id, object_b_id, world_contact_point{xyz}, contact_normal{xyz}, linear_velocity_delta{xyz}, angular_velocity_delta{xyz}, penetration_depth]
+    		 */
+    		COLLISIONS: 1
+    	},
+
+    	/**
+    	 * initializes the physics world
+    	 * [broadphase] String either 'sap' or 'naive' [default 'sap']
+    	 * [gravity] Object with float properties `x`, `y`, `z` [default {x:0, y:-9.8, z:0} ]
+    	 */
+    	INITIALIZE: 'INITIALIZE',
+
+    	/**
+    	 * adds a rigid body to the world
+    	 * body_id Integer unique id for the body
+    	 * shape_description Object definition corresponding to the type of rigid body (see BODY_TYPES)
+    	 * mass Float amount of mass the body has, 0 or Infinity creates a static object
+    	 * restitution Float body's restitution
+    	 * friction Float body's friction
+    	 * linear_damping Float body's linear damping
+    	 * angular_damping Float body's angular damping
+    	 * collision_groups Integer body's collision groups
+    	 * collision_mask Integer body's collision mask
+    	 */
+    	ADD_RIGIDBODY: 'ADD_RIGIDBODY',
+
+    	/**
+    	 * removes a rigid body from the world
+    	 * body_id Integer unique id of the body
+    	 */
+    	REMOVE_RIGIDBODY: 'REMOVE_RIGIDBODY',
+
+    	/**
+    	 * sets the specified rigid body's mass
+    	 * body_id Integer unique integer id for the body
+    	 * mass Float new mass value
+    	 */
+    	SET_RIGIDBODY_MASS: 'SET_RIGIDBODY_MASS',
+
+    	/**
+    	 * sets the specified rigid body's restitution
+    	 * body_id Integer unique integer id for the body
+    	 * mass Float new restitution value
+    	 */
+    	SET_RIGIDBODY_RESTITUTION: 'SET_RIGIDBODY_RESTITUTION',
+
+    	/**
+    	 * sets the specified rigid body's friction
+    	 * body_id Integer unique integer id for the body
+    	 * mass Float new friction value
+    	 */
+    	SET_RIGIDBODY_FRICTION: 'SET_RIGIDBODY_FRICTION',
+
+    	/**
+    	 * sets the specified rigid body's linear damping
+    	 * body_id Integer unique integer id for the body
+    	 * damping Float new linear damping value
+    	 */
+    	SET_RIGIDBODY_LINEAR_DAMPING: 'SET_RIGIDBODY_LINEAR_DAMPING',
+
+    	/**
+    	 * sets the specified rigid body's angular damping
+    	 * body_id Integer unique integer id for the body
+    	 * damping Float new angular damping value
+    	 */
+    	SET_RIGIDBODY_ANGULAR_DAMPING: 'SET_RIGIDBODY_ANGULAR_DAMPING',
+
+    	/**
+    	 * sets the specified rigid body's collision groups
+    	 * body_id Integer unique integer id for the body
+    	 * groups Integer new collision group value
+    	 */
+    	SET_RIGIDBODY_COLLISION_GROUPS: 'SET_RIGIDBODY_COLLISION_GROUPS',
+
+    	/**
+    	 * sets the specified rigid body's collision mask
+    	 * body_id Integer unique integer id for the body
+    	 * mask Integer new collision mask value
+    	 */
+    	SET_RIGIDBODY_COLLISION_MASK: 'SET_RIGIDBODY_COLLISION_MASK',
+
+    	/**
+    	 * sets the specified rigid body's position & rotation
+    	 * body_id Integer unique integer id for the body
+    	 * position Object new coordinates for the body's position, {x:x, y:y, z:z}
+    	 * rotation Object new quaternion values {x:x, y:y, z:z, w:w}
+    	 */
+    	SET_RIGIDBODY_TRANSFORM: 'SET_RIGIDBODY_TRANSFORM',
+
+    	/**
+    	 * sets the specified rigid body's linear velocity
+    	 * body_id Integer unique integer id for the body
+    	 * velocity Object new values for the body's linear velocity, {x:x, y:y, z:z}
+    	 */
+    	SET_RIGIDBODY_LINEAR_VELOCITY: 'SET_RIGIDBODY_LINEAR_VELOCITY',
+
+    	/**
+    	 * sets the specified rigid body's angular velocity
+    	 * body_id Integer unique integer id for the body
+    	 * velocity Object new values for the body's angular velocity, {x:x, y:y, z:z}
+    	 */
+    	SET_RIGIDBODY_ANGULAR_VELOCITY: 'SET_RIGIDBODY_ANGULAR_VELOCITY',
+
+    	/**
+    	 * sets the specified rigid body's linear factor
+    	 * body_id Integer unique integer id for the body
+    	 * factor Object new values for the body's linear factor, {x:x, y:y, z:z}
+    	 */
+    	SET_RIGIDBODY_LINEAR_FACTOR: 'SET_RIGIDBODY_LINEAR_FACTOR',
+
+    	/**
+    	 * sets the specified rigid body's angular factor
+    	 * body_id Integer unique integer id for the body
+    	 * factor Object new values for the body's angular factor, {x:x, y:y, z:z}
+    	 */
+    	SET_RIGIDBODY_ANGULAR_FACTOR: 'SET_RIGIDBODY_ANGULAR_FACTOR',
+
+    	/**
+    	 * steps the physics simulation
+    	 * time_delta Float total amount of time, in seconds, to step the simulation by
+    	 * [max_step] Float maximum step of size, in seconds [default is value of `time_delta`]
+    	 */
+    	STEP_SIMULATION: 'STEP_SIMULATION',
+
+    	/**
+    	 * performs ray traces
+    	 * raytrace_id unique identifier for this request
+    	 * rays Array[ { start: { x:x, y:y, z:z }, end: { x:x, y:y, z:z } } ]
+    	 */
+    	RAYTRACE: 'RAYTRACE',
+
+    	/**
+    	 * results of a raytrace request
+    	 * raytrace_id unique identifier of the request
+    	 * results Array[ Array[ { body_id:body_id, point: { x:x, y:y, z:z }, normal: { x:x, y:y, z:z } } ] ]
+    	 */
+    	RAYTRACE_RESULTS: 'RAYTRACE_RESULTS',
+
+    	/**
+    	 * adds a constraint on one or two bodies to the world
+    	 * entirety of the message body corresponds to the type of constraint (see CONSTRAINT_TYPES)
+    	 */
+    	ADD_CONSTRAINT: 'ADD_CONSTRAINT'
     };
 
     var _tmp_vector3_1 = new THREE.Vector3();
@@ -953,217 +1166,6 @@
     			});
     		}, scene)
     	);
-    }
-
-    var CONSTRAINT_TYPES = {
-        /**
-         * constraint_type String type of constraint
-         * constraint_id Number id of the constraint
-         * body_a_id Number id of body_a
-         * hinge_axis Object axis in body_a the hinge revolves around {x:x, y:y, z:z}
-         * point_a Object point in body_a the hinge revolves around {x:x, y:y, z:z}
-         * body_b_id [optional] Number id of body_b
-         * point_b [optional] Object point in body_b the hinge revolves around {x:x, y:y, z:z}
-         * active Boolean whether or not the constraint is enabled
-         * factor: Number factor applied to constraint, 0-1
-         * breaking_threshold: Number amount of force which, if exceeded, de-activates the constraint
-         * limit.enabled Boolean whether or not the limits are set
-         * limit.lower Number lower bound of limit
-         * limit.upper Number upper bound of limit
-         * motor.enabled Boolean whether or not the motor is on
-         * motor.torque Number maximum torque the motor can apply
-         * motor.max_speed Number maximum speed the motor can reach under its own power
-         */
-        HINGE: 'HINGE'
-    }
-
-    function HingeConstraint( body_a, hinge_axis, point_a, body_b, point_b ) {
-        Constraint.call( this );
-
-        this.body_a = body_a;
-        this.hinge_axis = hinge_axis;
-        this.point_a = point_a;
-        this.body_b = body_b;
-        this.point_b = point_b;
-
-        this.physics = {
-            active: true,
-            factor: 1,
-            breaking_threshold: 0,
-            last_impulse: new THREE.Vector3(),
-            limit: {
-                enabled: false,
-                lower: null,
-                upper: null
-            },
-            motor: {
-                enabled: false,
-                torque: null,
-                max_speed: null
-            }
-        };
-    }
-
-    HingeConstraint.prototype = Object.create( Constraint.prototype );
-    HingeConstraint.prototype.constructor = HingeConstraint;
-
-    HingeConstraint.prototype.getConstraintDefinition = function() {
-        return {
-            constraint_type: CONSTRAINT_TYPES.HINGE,
-            constraint_id: this.constraint_id,
-            body_a_id: this.body_a.physics._.id,
-            hinge_axis: { x: this.hinge_axis.x, y: this.hinge_axis.y, z: this.hinge_axis.z },
-            point_a: { x: this.point_a.x, y: this.point_a.y, z: this.point_a.z },
-            body_b_id: this.body_b == null ? null : this.body_b.physics._.id,
-            point_b: this.body_b == null ? null : { x: this.point_b.x, y: this.point_b.y, z: this.point_b.z },
-
-            active: this.physics.active,
-            factor: this.physics.factor,
-            breaking_threshold: this.physics.breaking_threshold,
-            limit: {
-                enabled: this.physics.limit.enabled,
-                lower: this.physics.limit.lower,
-                upper: this.physics.limit.upper
-            },
-            motor: {
-                enabled: this.physics.motor.enabled,
-                torque: this.physics.motor.torque,
-                max_speed: this.physics.motor.max_speed
-            }
-        };
-    };
-
-    HingeConstraint.prototype.setActive = function( active ) {
-        this.physics.active = active;
-    };
-
-    HingeConstraint.prototype.setLimit = function( lower, upper ) {
-        this.physics.limit.enabled = lower != null || upper != null;
-        this.physics.limit.lower = lower;
-        this.physics.limit.upper = upper;
-    };
-
-    HingeConstraint.prototype.setMotor = function( torque, max_speed ) {
-        this.physics.motor.enabled = torque != null || max_speed != null;
-        this.physics.motor.torque = torque;
-        this.physics.motor.max_speed = max_speed;
-    };
-
-    function TriangleMesh( first, second, third ) {
-    	return PhysicsObject.call( this, first, second, third, getShapeDefinition$6 );
-    }
-
-    function getShapeDefinition$6( geometry ) {
-    	var vertices = geometry.vertices.reduce(
-    		function( vertices, vertex ) {
-    			vertices.push( vertex.x, vertex.y, vertex.z );
-    			return vertices;
-    		},
-    		[]
-    	);
-
-    	var faces = geometry.faces.reduce(
-    		function( faces, face ) {
-    			faces.push( face.a, face.b, face.c );
-    			return faces;
-    		},
-    		[]
-    	);
-
-    	return {
-    		body_type: BODY_TYPES.TRIANGLE,
-    		vertices: vertices,
-    		faces: faces
-    	};
-    }
-
-    function Sphere( first, second, third ) {
-    	return PhysicsObject.call( this, first, second, third, getShapeDefinition$5 );
-    }
-
-    function getShapeDefinition$5( geometry ) {
-    	geometry.computeBoundingSphere(); // make sure bounding radius has been calculated
-
-    	return {
-    		body_type: BODY_TYPES.SPHERE,
-    		radius: geometry.boundingSphere.radius
-    	};
-    }
-
-    function Plane( first, second, third ) {
-    	return PhysicsObject.call( this, first, second, third, getShapeDefinition$4 );
-    }
-
-    function getShapeDefinition$4( geometry ) {
-    	geometry.computeBoundingBox(); // make sure bounding radius has been calculated
-
-    	return {
-    		body_type: BODY_TYPES.PLANE,
-    		width: geometry.boundingBox.max.x,
-    		height: geometry.boundingBox.max.y
-    	};
-    }
-
-    function Cylinder( first, second, third ) {
-    	return PhysicsObject.call( this, first, second, third, getShapeDefinition$3 );
-    }
-
-    function getShapeDefinition$3( geometry ) {
-    	geometry.computeBoundingBox(); // make sure bounding radius has been calculated
-
-    	return {
-    		body_type: BODY_TYPES.CYLINDER,
-    		radius: geometry.boundingBox.max.x,
-    		height: geometry.boundingBox.max.y
-    	};
-    }
-
-    function Convex( first, second, third ) {
-    	return PhysicsObject.call( this, first, second, third, getShapeDefinition$2 );
-    }
-
-    function getShapeDefinition$2( geometry ) {
-    	var vertices = geometry.vertices.reduce(
-    		function( vertices, vertex ) {
-    			vertices.push( vertex.x, vertex.y, vertex.z );
-    			return vertices;
-    		},
-    		[]
-    	);
-
-    	return {
-    		body_type: BODY_TYPES.CONVEX,
-    		vertices: vertices
-    	};
-    }
-
-    function Cone( first, second, third ) {
-    	return PhysicsObject.call( this, first, second, third, getShapeDefinition$1 );
-    }
-
-    function getShapeDefinition$1( geometry ) {
-    	geometry.computeBoundingBox(); // make sure bounding radius has been calculated
-
-    	return {
-    		body_type: BODY_TYPES.CONE,
-    		radius: geometry.boundingBox.max.x,
-    		height: geometry.boundingBox.max.y
-    	};
-    }
-
-    function Box( first, second, third ) {
-    	return PhysicsObject.call( this, first, second, third, getShapeDefinition );
-    }
-
-    function getShapeDefinition( geometry ) {
-    	geometry.computeBoundingBox(); // make sure bounding radius has been calculated
-
-    	return {
-    		body_type: BODY_TYPES.BOX,
-    		width: geometry.boundingBox.max.x,
-    		height: geometry.boundingBox.max.y,
-    		depth: geometry.boundingBox.max.z
-    	};
     }
 
     var index = {
